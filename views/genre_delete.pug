@@ -1,0 +1,20 @@
+extends layout
+block content
+    h1 #{title}: #{genre.name}
+    hr
+    div(style='margin-top: 20px; margin-left: 20px;')
+        if books
+        p The genre must have no books to be deleted.
+        h4 Books
+        hr
+        dl
+            each book in books
+                dt
+                    a(href=book.url) #{book.title}
+                dd #{book.summary}
+            else
+                p Do you really want to delete this genre?
+                form(method='POST' action='')
+                    div.form-group
+                        input#genreid.form-control(type='hidden' required='true' name='genreid' value=genre._id)
+                    button.btn.btn-primary(type='submit') Delete 

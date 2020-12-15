@@ -80,13 +80,45 @@ exports.genre_create_post = [
 ];
 
 // Display Genre delete form on GET.
-exports.genre_delete_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Genre delete GET');
+exports.genre_delete_get = function(req, res, next) {
+   async.parallel({
+       books_in_genre: (callback) => {
+            Book.find({'genre': req.params.id}).populate('author').exec(callback);
+       },
+       genre: (callback) => {
+            Genre.findById(req.params.id).exec(callback);
+       }
+   }, (err, results) => {
+        if(err) { return next(err); }
+        if(results.genre == null) { res.redirect('/catalog/genres'); }
+        res.render('genre_delete', {title: 'Delete Genre', books: results.books_in_genre, genre: results.genre});
+   });
 };
 
 // Handle Genre delete on POST.
-exports.genre_delete_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Genre delete POST');
+exports.genre_delete_post = function(req, res, next) {
+    /*
+    1. Get data from mongoose DB
+    2. Handle errors
+    3. If genre still has books re render same page
+    4. If genre has no books, remove from database and go to list of genres
+    */
+    async.parallel({
+        books: (callback) => {
+            Book.find({'genre': req.body.genreid}).exec(callback);
+        },
+        genre: (callback) => {
+            Genre.findById(req.body.genreid).exec(callback);
+        }
+    }, (err, results) => {
+        if(err) { return next(err); }
+        if( results.books.length > 0) { res.render('genre_delete', { title: 'Delete Genre', genre: results.genre, books: results.books}) ;} else {
+            Genre.findByIdAndRemove(req.body.genreid, (err) => { 
+                if(err) { return next(err); }
+                res.redirect('/catalog/genres');
+            });
+        }
+    });
 };
 
 // Display Genre update form on GET.
