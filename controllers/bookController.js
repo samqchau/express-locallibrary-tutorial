@@ -6,6 +6,7 @@ const Author = require('../models/author');
 
 const {body, validationResult} = require('express-validator');
 const async = require('async');
+const book = require('../models/book');
 
 exports.index = function(req, res) {
     async.parallel({
@@ -138,21 +139,101 @@ exports.book_create_post = [
 ];
 
 // Display book delete form on GET.
-exports.book_delete_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book delete GET');
+exports.book_delete_get = function(req, res, next) {
+
 };
 
 // Handle book delete on POST.
 exports.book_delete_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book delete POST');
+    
 };
 
 // Display book update form on GET.
-exports.book_update_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book update GET');
+exports.book_update_get = function(req, res, next) {
+    async.parallel({
+        book: (callback) => {
+            Book.findById(req.params.id).populate('genre').populate('author').exec(callback);
+        },
+        authors: (callback) => {
+            Author.find(callback);
+        },
+        genres: (callback) => {
+            Genre.find(callback);
+        }
+    }, (err, results) => {
+        if(err) { return next(err); }
+        if(results.book == null) {
+            const err = new Error('Book not found');
+            err.status = 404;
+            return next(err);
+        }
+
+        for(let all_genre_iter = 0; all_genre_iter < results.genres.length; all_genre_iter++) {
+            for(let book_genre_iter = 0; book_genre_iter < results.book.genre.length; book_genre_iter++){
+                if(results.genres[all_genre_iter]._id.toString() === results.book.genre[book_genre_iter]._id.toString()){
+                    results.genres[all_genre_iter].checked = 'true';
+                }
+            }
+        }
+
+        res.render('book_form', {title: 'Update Book', authors: results.authors, genres: results.genres, book: results.book});
+    });
 };
 
 // Handle book update on POST.
-exports.book_update_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Book update POST');
-};
+exports.book_update_post = [
+    (req, res, next) => {
+        if(!(req.body.genre instanceof Array)){
+            if(typeof req.body.genre==='undefined'){
+                req.body.genre = [];
+            } else{
+                req.body.genre = new Array(req.body.genre);
+            }
+        }
+        next();
+    },
+
+    body('title', 'Title must not be empty.').trim().isLength({min: 1}).escape(),
+    body('author', 'Author must not be empty.').trim().isLength({min: 1}).escape(),
+    body('summary', 'Summary must not be empty').trim().isLength({min: 1}).escape(),
+    body('isbn', 'ISBN must not be empty').trim().isLength({min: 1}).escape(),
+    body('genre.*').escape(),
+
+    (req, res, next) => {
+        const errors = validationResult(req);
+        const book = new Book ({
+            title: req.body.title,
+            author: req.body.author,
+            summary: req.body.summary,
+            isbn: req.body.isbn,
+            genre: (typeof req.body.genre==='undefined') ? [] : req.body.genre,
+            _id: req.params.id
+        });
+
+        if(!errors.isEmpty()){
+            async.parallel({
+                authors: (callback) => {
+                    Author.find(callback);
+                },
+                genres: (callback) => {
+                    Genre.find(callback);
+                }
+            }, (err, results) => {
+                if(err) { return next(err); }
+                for(let i = 0; i < results.genres.length; i++){
+                    if(book.genre.indexOf(results.genres[i]._id) > -1){
+                        results.genres[i].checked = 'true';
+                    }
+                }
+                res.render('book_form', { title: 'Update Book', authors: results.authors, genres: results.genres, book: book, errors: errors.array() });
+                return;
+            });
+        } else{
+            Book.findByIdAndUpdate(req.params.id, book, {}, (err, thebook) => {
+                if(err) { return next(err); }
+                res.redirect(thebook.url);
+            });
+        }
+    },
+
+];

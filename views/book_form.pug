@@ -11,7 +11,7 @@ block content
                 - authors.sort((a,b) => {let textA = a.family_name.toUpperCase(); let textB = b.family_name.toUpperCase(); return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;});
                 for author in authors
                     if book
-                        option(value=author._id selected=(author.id.toString()===book.author._id.toString()? 'selected':false)) #{author.name}
+                        option(value=author._id selected=(author.id.toString()==book.author._id.toString() || author.id.toString() == book.author ? 'selected':false)) #{author.name}
                     else
                         option(value=author._id) #{author.name}
         div.form-group
