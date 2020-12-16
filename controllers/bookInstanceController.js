@@ -93,7 +93,7 @@ exports.bookinstance_update_get = function(req, res, next) {
             Book.find().populate('author').populate('genre').exec(callback);
         },
         instance: (callback) => {
-            BookInstance.findById(req.params.id).populate('book').exec(callback);
+            BookInstance.findById(req.params.id).exec(callback);
         }
     }, (err, results) => {
         if(err) { return next(err); }
@@ -109,7 +109,7 @@ exports.bookinstance_update_get = function(req, res, next) {
 // Handle bookinstance update on POST.
 exports.bookinstance_update_post = [
     body('book', 'Book must be specified').trim().isLength({min: 1}).escape(),
-    body('imprint', 'Imprint must be specified').trim().isLength({min: 1}).escape(),
+    body('imprint', 'Imprint must be specified').trim().isLength({min: 3}).withMessage('Imprint must be at least 3 characters').escape(),
     body('status').escape(),
     body('due_back', 'Invalid date').optional({checkFalsy: true}).isISO8601().toDate(),
 
@@ -125,9 +125,12 @@ exports.bookinstance_update_post = [
         });
 
         if(!errors.isEmpty()){
-            BookInstance.findById(body.id).populate('book').exec((err, results) => {
+            async.parallel({
+                book_list: (callback) => {Book.find().populate('author').populate('genre').exec(callback)}, 
+                bookinstance: (callback) => {BookInstance.findById(body.id).exec(callback);}
+            }, (err, results) => {
                 if(err) { return next(err); }
-                res.render('bookinstance_form', {title: 'Update Instance', book_list: results.book_list, bookinstance: bookInstance});
+                res.render('bookinstance_form', {title: 'Update Instance', book_list: results.book_list, bookinstance: bookInstance, errors: errors.array()});
                 return;
             });
         } else{
