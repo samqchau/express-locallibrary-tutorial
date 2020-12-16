@@ -14,4 +14,6 @@ block content
         p #[strong Due back:] #{bookinstance.due_back_formatted}
     p #[small ID: #{bookinstance._id}]
     hr
-    a(href=(`${bookinstance.url}/delete`)) Delete
+    a(href=(`${bookinstance.url}/update`)) Update
+    |
+    a(href=(`${bookinstance.url}/delete`) style='margin-left:20px;') Delete

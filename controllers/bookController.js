@@ -266,6 +266,5 @@ exports.book_update_post = [
                 res.redirect(thebook.url);
             });
         }
-    },
-
+    }
 ];
