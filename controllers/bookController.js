@@ -6,7 +6,6 @@ const Author = require('../models/author');
 
 const {body, validationResult} = require('express-validator');
 const async = require('async');
-const book = require('../models/book');
 
 exports.index = function(req, res) {
     async.parallel({
