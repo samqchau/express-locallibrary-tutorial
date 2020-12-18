@@ -14,7 +14,8 @@ var app = express();
 
 //Database setup, import mongoose, get url to mongoDB Atlas, mongoose connects to MongoDB Atlas
 const mongoose = require('mongoose');
-const mongoDB = 'mongodb+srv://samqchau:samqchau@cluster0.bngxt.mongodb.net/local_library?retryWrites=true';
+const dev_db_url = 'mongodb+srv://samqchau:samqchau@cluster0.bngxt.mongodb.net/local_library?retryWrites=true';
+const mongoDB = process.env.MONGODB_URI || dev_db_url;
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
